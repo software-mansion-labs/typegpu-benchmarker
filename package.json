@@ -1,0 +1,21 @@
+{
+  "name": "workflows",
+  "version": "0.0.0",
+  "scripts": {
+    "measure": "deno run --allow-all processReleases.ts && rm -rf tmp",
+    "local:env": "source .venv/bin/activate && pip install -r requirements.txt",
+    "plot": "python3 plotter.py"
+  },
+  "engines": {
+    "node": ">=12.20.0"
+  },
+  "packageManager": "pnpm@10.18.3",
+  "dependencies": {
+    "fs-extra": "^11.3.2",
+    "simple-git": "^3.28.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@webgpu/types": "^0.1.66"
+  }
+}
