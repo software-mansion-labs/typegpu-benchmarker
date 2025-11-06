@@ -129,15 +129,12 @@ async function runScript(repoPath: string) {
 // debug variables
 let start: number;
 let end: number;
-const origin = performance.now();
 
 async function processReleases() {
   try {
     if (process.env.DEBUG === '1') {
       console.log(
-        `[DEBUG] timestamp of start of processReleases: ${
-          performance.now() - origin
-        }`,
+        `[DEBUG] timestamp of start of processReleases: ${performance.now()}`,
       );
     }
 
@@ -149,7 +146,7 @@ async function processReleases() {
 
     if (process.env.DEBUG === '1') {
       console.log(
-        `[DEBUG] timestamp of getting tags: ${performance.now() - origin}`,
+        `[DEBUG] timestamp of getting tags: ${performance.now()}`,
       );
       console.log(`[DEBUG] time of getting tags: ${end - start}`);
     }
@@ -162,9 +159,7 @@ async function processReleases() {
       if (process.env.DEBUG === '1') {
         console.log(`[DEBUG] time of cloning ${tag}: ${end - start}`);
         console.log(
-          `[DEBUG] timestamp of cloning tag ${tag}: ${
-            performance.now() - origin
-          }`,
+          `[DEBUG] timestamp of cloning tag ${tag}: ${performance.now()}`,
         );
       }
 
@@ -182,17 +177,13 @@ async function processReleases() {
           `[DEBUG] time of injecting files into ${tag}: ${end - start}`,
         );
         console.log(
-          `[DEBUG] timestamp of injecting files into tag ${tag}: ${
-            performance.now() - origin
-          }`,
+          `[DEBUG] timestamp of injecting files into tag ${tag}: ${performance.now()}`,
         );
       }
 
       if (process.env.DEBUG === '1') {
         console.log(
-          `[DEBUG] timestamp before running script on ${tag}: ${
-            performance.now() - origin
-          }`,
+          `[DEBUG] timestamp before running script on ${tag}: ${performance.now()}`,
         );
       }
 
@@ -204,9 +195,7 @@ async function processReleases() {
           `[DEBUG] time of running benchmark on ${tag}: ${end - start}`,
         );
         console.log(
-          `[DEBUG] timestamp after running script on ${tag}: ${
-            performance.now() - origin
-          }`,
+          `[DEBUG] timestamp after running script on ${tag}: ${performance.now()}`,
         );
       }
 
@@ -231,9 +220,7 @@ async function processReleases() {
           `[DEBUG] time of copying result files on ${tag}: ${end - start}`,
         );
         console.log(
-          `[DEBUG] timestamp after copying result files of ${tag}: ${
-            performance.now() - origin
-          }`,
+          `[DEBUG] timestamp after copying result files of ${tag}: ${performance.now()}`,
         );
       }
     }
@@ -243,13 +230,13 @@ async function processReleases() {
   } finally {
     if (process.env.DEBUG === '1') {
       console.log(
-        `[DEBUG] timestamp before deleting tmp: ${performance.now() - origin}`,
+        `[DEBUG] timestamp before deleting tmp: ${performance.now()}`,
       );
     }
     await fs.remove(tmpDir);
     if (process.env.DEBUG === '1') {
       console.log(
-        `[DEBUG] timestamp after deleting tmp: ${performance.now() - origin}`,
+        `[DEBUG] timestamp after deleting tmp: ${performance.now()}`,
       );
     }
   }
@@ -259,8 +246,6 @@ await processReleases();
 
 if (process.env.DEBUG === '1') {
   console.log(
-    `[DEBUG] timestamp after function processReleases: ${
-      performance.now() - origin
-    }`,
+    `[DEBUG] timestamp after function processReleases: ${performance.now()}`,
   );
 }

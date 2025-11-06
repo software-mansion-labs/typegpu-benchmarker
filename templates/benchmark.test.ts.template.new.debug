@@ -149,7 +149,6 @@ function setupUnionOfMocks() {
 const outputFile = 'example-benchmark.json';
 const debugOutputFile = "example-runnning-times.json";
 const timestampsFile = 'timestamps.json';
-const origin = performance.now();
 
 const unionOfTriggers = [
   'Test Resolution',
@@ -186,7 +185,7 @@ describe('benchmark all the examples', () => {
   });
 
   afterAll(() => {
-    timestamps.push({ "afterAll-begin": performance.now() - origin });
+    timestamps.push({ "afterAll-begin": performance.now() });
     writeFileSync(
       outputFile,
       `${JSON.stringify({ resolutionMetrics })}`,
@@ -195,18 +194,18 @@ describe('benchmark all the examples', () => {
       debugOutputFile,
       `${JSON.stringify({ examplesRunningTime })}`,
     );
+    timestamps.push({ "afterAll-end": performance.now() });
     writeFileSync(
       timestampsFile,
       `${JSON.stringify({ timestamps })}`,
     );
-    timestamps.push({ "afterAll-end": performance.now() - origin });
   });
 
   const examples = Object.values(examplesRecord);
 
   it('all examples benchmark', async ({ device }) => {
     for (const example of examples) {
-      timestamps.push({ [example.key]: performance.now() - origin });
+      timestamps.push({ [example.key]: performance.now() });
       for (let i = 0; i < iterationsPerExample; i++) {
         callbackInvoked = false; // part of cleaning mocks
         vi.clearAllMocks();
@@ -230,7 +229,7 @@ describe('benchmark all the examples', () => {
         // sometimes it resets after the example and sometimes it doesn't...
         globalExt.__TYPEGPU_PERF_RECORDS__?.set('resolution', []);
       }
-      timestamps.push({ [example.key]: performance.now() - origin });
+      timestamps.push({ [example.key]: performance.now() });
     }
   }, timeout);
 });
