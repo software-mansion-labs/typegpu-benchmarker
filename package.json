@@ -2,6 +2,7 @@
   "name": "workflows",
   "version": "0.0.0",
   "scripts": {
+    "debug": "DEBUG=1 deno run --allow-all processReleases.ts && rm -rf tmp",
     "measure": "deno run --allow-all processReleases.ts && rm -rf tmp",
     "local:env": "source .venv/bin/activate && pip install -r requirements.txt",
     "plot": "python3 plotter.py"

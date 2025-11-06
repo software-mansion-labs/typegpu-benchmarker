@@ -1,0 +1,236 @@
+import { writeFileSync } from 'node:fs';
+import type { INTERNAL_GlobalExt } from 'typegpu';
+import { afterAll, beforeAll, describe, vi } from 'vitest';
+import {
+  runExampleTest,
+} from '../../../packages/typegpu/tests/examples/utils/baseTest.ts';
+import { createDeepNoopProxy } from '../../../packages/typegpu/tests/examples/utils/testUtils.ts';
+import { it } from '../../../packages/typegpu/tests/utils/extendedIt.ts';
+import { examples as examplesRecord } from '../src/examples/exampleContent.ts';
+
+// due to conflicts between mocks in `commonMocks.ts`
+// I need to rewrite union in 1 function
+let callbackInvoked = false;
+function setupUnionOfMocks() {
+  // === begining of common mocks ===
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+    () => {
+      return createDeepNoopProxy(
+        {} as unknown as CanvasRenderingContext2D,
+        new Set(),
+        // biome-ignore lint/suspicious/noExplicitAny: we testing here
+      ) as any;
+    },
+  );
+
+  // jsdom will sometimes throw css related errors which we don't care about
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+
+  Object.defineProperty(
+    HTMLVideoElement.prototype,
+    'requestVideoFrameCallback',
+    {
+      value: (callback: VideoFrameRequestCallback) => {
+        if (!callbackInvoked) {
+          callbackInvoked = true;
+          callback(
+            0,
+            { width: 640, height: 480 } as VideoFrameCallbackMetadata,
+          );
+        }
+        return 0; // Mock ID
+      },
+      writable: true,
+      configurable: true,
+    },
+  );
+
+  Object.defineProperty(document, 'fonts', {
+    value: {
+      load: vi.fn().mockResolvedValue([
+        {},
+        {},
+      ]),
+    },
+  });
+
+  vi.spyOn(HTMLVideoElement.prototype, 'currentTime', 'get')
+    .mockReturnValue(1);
+
+  Object.defineProperty(HTMLVideoElement.prototype, 'readyState', {
+    get: () => 4, // HAVE_ENOUGH_DATA
+    configurable: true,
+  });
+  // === end of common mocks ===
+
+  // === begining of resize observer mock ===
+  vi.stubGlobal(
+    'ResizeObserver',
+    vi.fn(() => ({
+      observe: vi.fn(),
+      unobserve: vi.fn(),
+      disconnect: vi.fn(),
+    })),
+  );
+  // === end of resize observer mock ===
+
+  // === begining of load 3d model mock ===
+  vi.doMock('@loaders.gl/core', () => ({
+    load: vi.fn(async () => ({
+      attributes: {
+        POSITION: {
+          value: new Float32Array(),
+        },
+        NORMAL: {
+          value: new Float32Array(),
+        },
+        TEXCOORD_0: {
+          value: new Float32Array(),
+        },
+      },
+    })),
+  }));
+
+  vi.doMock('@loaders.gl/obj', () => ({
+    OBJLoader: {},
+  }));
+  // === end of load 3d model mock ===
+
+  // === begining of merged mocks (fetch and createImageBitmap)
+  vi.stubGlobal('createImageBitmap', async () => {
+    return {
+      width: 2,
+      height: 2,
+      close: () => {},
+      getImageData: () => {
+        return {
+          data: new Uint8ClampedArray([0, 0, 0, 255, 255, 255, 255, 255]),
+          width: 2,
+          height: 2,
+        };
+      },
+    } as ImageBitmap;
+  });
+
+  vi.stubGlobal('fetch', async (url: string) => {
+    if (url.startsWith('/TypeGPU/assets/mnist-weights/')) {
+      const mockHeader =
+        "{'descr': '<f4', 'fortran_order': False, 'shape': (0, 0)}";
+      const headerBuffer = new TextEncoder().encode(mockHeader);
+      const totalBuffer = new ArrayBuffer(headerBuffer.length + 100);
+      const view = new Uint8Array(totalBuffer);
+      view.set(headerBuffer, 0);
+      return new Response(totalBuffer);
+    }
+
+    if (url.includes('.obj')) {
+      return new Response('', {
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    }
+
+    if (
+      url.includes('.jpg') ||
+      url.includes('.png') ||
+      url.startsWith('/TypeGPU/')
+    ) {
+      const mockImage = new Uint8Array([0, 0, 0, 255, 255, 255, 255, 255]);
+      return new Response(mockImage, {
+        headers: { 'Content-Type': 'image/png' },
+      });
+    }
+
+    return new Response('Mocked fetch response', { status: 200 });
+  });
+
+  // === end of merged
+}
+
+const outputFile = 'example-benchmark.json';
+const debugOutputFile = "example-runnning-times.json";
+const timestampsFile = 'timestamps.json';
+const origin = performance.now();
+
+const unionOfTriggers = [
+  'Test Resolution',
+  'Increment',
+  'Compute',
+  'Run tests',
+  'One argument',
+  'Multiple arguments',
+  'String literals',
+  'Different types',
+  'Compound types',
+  'Two logs',
+  'Two threads',
+  '100 dispatches',
+  'Varying size logs',
+  'Render pipeline',
+  'Draw indexed',
+  'Too many logs',
+];
+const iterationsPerExample = 1;
+const timeout = 0; // no limit
+const maxExpectedNumberOfCalls = 21;
+
+const globalExt = globalThis as INTERNAL_GlobalExt;
+globalExt.__TYPEGPU_MEASURE_PERF__ = true;
+
+const resolutionMetrics: unknown[] = [];
+const examplesRunningTime: unknown[] = [];
+const timestamps: unknown[] = [];
+
+describe('benchmark all the examples', () => {
+  beforeAll(() => {
+    setupUnionOfMocks();
+  });
+
+  afterAll(() => {
+    timestamps.push({ "afterAll-begin": performance.now() - origin });
+    writeFileSync(
+      outputFile,
+      `${JSON.stringify({ resolutionMetrics })}`,
+    );
+    writeFileSync(
+      debugOutputFile,
+      `${JSON.stringify({ examplesRunningTime })}`,
+    );
+    writeFileSync(
+      timestampsFile,
+      `${JSON.stringify({ timestamps })}`,
+    );
+    timestamps.push({ "afterAll-end": performance.now() - origin });
+  });
+
+  const examples = Object.values(examplesRecord);
+
+  it('all examples benchmark', async ({ device }) => {
+    for (const example of examples) {
+      timestamps.push({ [example.key]: performance.now() - origin });
+      for (let i = 0; i < iterationsPerExample; i++) {
+        callbackInvoked = false; // part of cleaning mocks
+        vi.clearAllMocks();
+
+        const [category, name] = example.key.split('--');
+
+        const start = performance.now();
+        await runExampleTest({
+          category,
+          name,
+          controlTriggers: unionOfTriggers,
+          expectedCalls: maxExpectedNumberOfCalls,
+        }, device);
+        const end = performance.now();
+
+        examplesRunningTime.push({ [example.key]: end - start });
+        resolutionMetrics.push(
+          ...globalExt.__TYPEGPU_PERF_RECORDS__?.get('resolution') ?? [],
+        );
+
+        // sometimes it resets after the example and sometimes it doesn't...
+        globalExt.__TYPEGPU_PERF_RECORDS__?.set('resolution', []);
+      }
+      timestamps.push({ [example.key]: performance.now() - origin });
+    }
+  }, timeout);
+});
