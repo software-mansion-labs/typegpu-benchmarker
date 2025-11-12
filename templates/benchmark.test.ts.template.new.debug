@@ -168,7 +168,7 @@ const unionOfTriggers = [
   'Draw indexed',
   'Too many logs',
 ];
-const iterationsPerExample = 1;
+const iterationsPerExample = 3;
 const timeout = 0; // no limit
 const maxExpectedNumberOfCalls = 21;
 
