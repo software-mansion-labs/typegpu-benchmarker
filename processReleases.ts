@@ -101,7 +101,9 @@ async function processOlderRelease(repoPath: string) {
     ),
     // copy our script
     fs.copyFile(
-      'templates/benchmark.test.ts.template.old',
+      process.env.DEBUG === '1'
+        ? 'templates/benchmark.test.ts.template.old.debug'
+        : 'templates/benchmark.test.ts.template.old',
       path.join(repoPath, pathToInjectBenchmark),
     ),
   ]);
@@ -148,16 +150,16 @@ async function processReleases() {
       console.log(
         `[DEBUG] timestamp of getting tags: ${performance.now()}`,
       );
-      console.log(`[DEBUG] time of getting tags: ${end - start}`);
+      console.log(`    [DEBUG] time of getting tags: ${end - start}`);
     }
 
     // process all tags
-    for (const tag of tags.slice(tags.length - 2, tags.length - 1)) {
+    for (const tag of tags.slice(tags.length - 3, tags.length - 2)) {
       start = performance.now();
       await cloneRepo(tag);
       end = performance.now();
       if (process.env.DEBUG === '1') {
-        console.log(`[DEBUG] time of cloning ${tag}: ${end - start}`);
+        console.log(`    [DEBUG] time of cloning ${tag}: ${end - start}`);
         console.log(
           `[DEBUG] timestamp of cloning tag ${tag}: ${performance.now()}`,
         );
@@ -174,7 +176,7 @@ async function processReleases() {
       end = performance.now();
       if (process.env.DEBUG === '1') {
         console.log(
-          `[DEBUG] time of injecting files into ${tag}: ${end - start}`,
+          `    [DEBUG] time of injecting files into ${tag}: ${end - start}`,
         );
         console.log(
           `[DEBUG] timestamp of injecting files into tag ${tag}: ${performance.now()}`,
@@ -192,7 +194,7 @@ async function processReleases() {
       end = performance.now();
       if (process.env.DEBUG === '1') {
         console.log(
-          `[DEBUG] time of running benchmark on ${tag}: ${end - start}`,
+          `    [DEBUG] time of running benchmark on ${tag}: ${end - start}`,
         );
         console.log(
           `[DEBUG] timestamp after running script on ${tag}: ${performance.now()}`,
@@ -217,7 +219,7 @@ async function processReleases() {
       end = performance.now();
       if (process.env.DEBUG === '1') {
         console.log(
-          `[DEBUG] time of copying result files on ${tag}: ${end - start}`,
+          `    [DEBUG] time of copying result files on ${tag}: ${end - start}`,
         );
         console.log(
           `[DEBUG] timestamp after copying result files of ${tag}: ${performance.now()}`,

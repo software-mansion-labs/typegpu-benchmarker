@@ -6,7 +6,7 @@ import {
 } from '../../../packages/typegpu/tests/examples/utils/baseTest.ts';
 import { createDeepNoopProxy } from '../../../packages/typegpu/tests/examples/utils/testUtils.ts';
 import { it } from '../../../packages/typegpu/tests/utils/extendedIt.ts';
-import { examples as examplesRecord } from '../src/examples/exampleContent.ts';
+import { examples as examplesRecord } from '../src/utils/examples/exampleContent.ts';
 
 // due to conflicts between mocks in `commonMocks.ts`
 // I need to rewrite union in 1 function
