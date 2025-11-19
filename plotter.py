@@ -1,15 +1,14 @@
 import json
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
 from pathlib import Path
 
-# === CONFIGURATION ===
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 data_folder = Path("./benchmarks")
 output_prefix = "./plots/combined-"
 logscale = True
 
-# === READ ALL JSON FILES ===
 all_data = []
 
 for json_file in data_folder.glob("*.json"):
@@ -26,7 +25,6 @@ df = pd.DataFrame(all_data)
 df = df[df["resolveDuration"] != 0]
 
 
-# === PLOTTING ===
 def plot_bench(
     df, metric="resolveDuration", scale="linear", max_size=None, latest=None, suffix=""
 ):
