@@ -8,6 +8,7 @@ const promisifiedExec = promisify(exec);
 const pwd = import.meta.dirname;
 
 const github = 'https://github.com/software-mansion/TypeGPU.git';
+const branchPrefix = 'benchmarker/';
 const scriptToRun =
   'pnpm install && ATTEST_skipTypes=1 pnpm vitest run apps/typegpu-docs/tests/benchmark.test.ts 2> /dev/null';
 const scriptToInstallDOM = 'pnpm add --dir apps/typegpu-docs -d jsdom';
@@ -17,6 +18,7 @@ const firstTagWithPERF = 'v0.6.0';
 const includeNotStable = false;
 const regexNotStable = /[a-z]/i;
 const lastReleaseWithoutMocks = 'v0.7.1';
+const lastReleaseWithoutUpdatedMetaJSON = 'v0.8.2';
 
 // relative to the root of cloned repo
 const pathToInjectVitest = 'apps/typegpu-docs/vitest.config.mts';
@@ -46,13 +48,16 @@ async function getTags(): Promise<string[]> {
 }
 
 async function cloneRepo(tag: string) {
+  const branch = (tag.localeCompare(lastReleaseWithoutUpdatedMetaJSON) > 0)
+    ? tag
+    : `${branchPrefix}${tag.slice(1)}`;
   try {
     await git.clone(github, path.join(tmpDir, tag), [
       '--depth=1',
-      `--branch=${tag}`,
+      `--branch=${branch}`,
     ]);
-  } catch (_) {
-    console.warn(`Cloning tag ${tag} failed.`);
+  } catch (e) {
+    console.warn(`Cloning tag ${tag} failed.`, e);
   }
 }
 
@@ -111,9 +116,8 @@ async function runScript(repoPath: string) {
     await promisifiedExec(scriptToRun, {
       cwd: repoPath,
     });
-  } catch (error) {
-    console.warn('Running pnpm script failed.');
-    console.log(error);
+  } catch (e) {
+    console.warn('Running pnpm script failed.', e);
   }
 }
 
@@ -135,16 +139,24 @@ async function processRelease() {
         await processOlderRelease(repoPath);
       }
 
-      await runScript(repoPath);
-
+      try {
+        const start = performance.now();
+        await runScript(repoPath);
+        const end = performance.now();
+        console.log(`Time of running tag ${tag}:`, end - start);
+      } catch (e) {
+        console.warn(
+          'Something went wrong when running script in cloned repo.',
+          e,
+        );
+      }
       await fs.copyFile(
         path.join(repoPath, 'example-benchmark.json'),
         `${benchmarksDir}/${tag}.json`,
       );
     }
-  } catch (error) {
-    console.warn('Something went wrong in outer try-catch.');
-    console.log(error);
+  } catch (e) {
+    console.warn('Something went wrong in outer try-catch.', e);
   } finally {
     await fs.remove(tmpDir);
   }

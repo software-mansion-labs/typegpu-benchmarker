@@ -139,27 +139,8 @@ function setupUnionOfMocks() {
 }
 
 const outputFile = 'example-benchmark.json';
-const unionOfTriggers = [
-  'Test Resolution',
-  'Increment',
-  'Compute',
-  'Run tests',
-  'One argument',
-  'Multiple arguments',
-  'String literals',
-  'Different types',
-  'Compound types',
-  'Two logs',
-  'Two threads',
-  '100 dispatches',
-  'Varying size logs',
-  'Render pipeline',
-  'Draw indexed',
-  'Too many logs',
-];
 const iterationsPerExample = 10;
 const timeout = 0; // no limit
-const maxExpectedNumberOfCalls = 21;
 
 const globalExt = globalThis as INTERNAL_GlobalExt;
 globalExt.__TYPEGPU_MEASURE_PERF__ = true;
@@ -190,8 +171,8 @@ describe('benchmark all the examples', () => {
         await runExampleTest({
           category,
           name,
-          controlTriggers: unionOfTriggers,
-          expectedCalls: maxExpectedNumberOfCalls,
+          controlTriggers: example.metadata.controlTriggers ?? [],
+          expectedCalls: example.metadata.expectedCalls ?? 0,
         }, device);
 
         resolutionMetrics.push(
